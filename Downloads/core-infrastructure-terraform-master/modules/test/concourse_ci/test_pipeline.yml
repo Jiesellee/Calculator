@@ -1,0 +1,133 @@
+jobs:
+- name: build_hello-world
+  serial: true
+  plan:
+  - get: version
+    params:
+      bump: patch
+  - get: "git_repo_hello-world"
+    trigger: true
+  - get: "golang_build_docker_image"
+  - task: "test_hello-world"
+    image: "golang_build_docker_image"
+    config:
+      platform: linux
+      inputs:
+      - name: "git_repo_hello-world"
+      run:
+        dir: "git_repo_hello-world"
+        path: go
+        args:
+          - "test"
+  - task: "build_hello-world"
+    image: "golang_build_docker_image"
+    config:
+      platform: linux
+      inputs:
+      - name: "git_repo_hello-world"
+      run:
+        dir: "git_repo_hello-world"
+        path: go
+        args:
+          - "build"
+  - put: "docker_hello-world"
+    params: 
+      build: git_repo_hello-world
+      tag_as_latest: true
+  - put: "version"
+    params: 
+      file: version/number
+
+- name: deploy_dev_hello-world
+  serial: true
+  plan:
+    - get: "version"
+      passed: [build_hello-world]
+      trigger: true
+    - task: "deploy"
+      config:
+        image_resource:
+          type: docker-image
+          source:
+            repository: bash
+        platform: linux
+        run: 
+          path: sh
+          args:
+          - -exc
+          - |
+            echo 'would deploy dev'
+
+- name: deploy_staging_hello-world
+  serial: true
+  plan:
+    - get: "version"
+      passed: [deploy_dev_hello-world]
+      trigger: true
+    - task: "deploy"
+      config:
+        image_resource:
+          type: docker-image
+          source:
+            repository: bash
+        platform: linux
+        run: 
+          path: sh
+          args:
+          - -exc
+          - |
+            echo 'would deploy staging'
+
+- name: deploy_prod_hello-world
+  serial: true
+  plan:
+    - get: "version"
+      passed: [deploy_staging_hello-world]
+      trigger: true
+    - task: "deploy"
+      config:
+        image_resource:
+          type: docker-image
+          source:
+            repository: bash
+        platform: linux
+        run: 
+          path: sh
+          args:
+          - -exc
+          - |
+            echo 'would deploy prod'
+
+resources:
+- name: "golang_build_docker_image"
+  type: docker-image
+  source:
+    repository: "golang"
+    tag: "1.7"
+
+- name: "git_repo_hello-world"
+  type: "git"
+  source: 
+    uri: "https://github.com/willejs/hello.git"
+    branch: "master"
+
+- name: "docker_hello-world"
+  type: "docker-image"
+  source:
+    repository: 350793678069.dkr.ecr.eu-west-1.amazonaws.com/hello-world
+
+- name: version
+  type: semver
+  source:
+    driver: s3
+    bucket: test-test-concourse-versions
+    key: hello-world/version
+    region_name: eu-west-1
+    initial_version: "0.0.1"
+
+resource_types:
+- name: semver
+  type: docker-image
+  source:
+      repository: willejs/semver-resource
+      tag: latest

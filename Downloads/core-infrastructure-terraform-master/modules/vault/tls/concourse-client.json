@@ -1,0 +1,14 @@
+{
+  "CN": "concourse",
+  "key": {
+   "algo": "rsa",
+   "size": 4096
+  },
+  "names": [
+    {
+      "C": "GB",
+      "L": "London",
+      "ST": "London"
+    }
+  ]
+}

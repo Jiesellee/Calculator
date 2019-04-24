@@ -1,0 +1,15 @@
+{
+  "name": "calculator",
+  "version": "1.0.0",
+  "description": "package.json for calculator",
+  "main": "calculator.js",
+  "scripts": {
+    "format":"prettier",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Jieselle",
+  "license": "ISC",
+  "devDependencies": {
+    "prettier": "1.17.0"
+  }
+}

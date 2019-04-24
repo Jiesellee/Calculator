@@ -1,0 +1,11 @@
+#!/bin/bash -e
+
+# Add this to .git/hooks/pre-commit in your project
+
+if [ $(terraform fmt "$PWD" | wc -l) -eq 0 ]; then
+  echo "No terraform formatting errors"
+  exit 0
+else
+  echo "!!!!!!!! Failed terraform linting! Run terraform fmt commit your changes and try again !!!!!!!!!" 
+  exit 1
+fi

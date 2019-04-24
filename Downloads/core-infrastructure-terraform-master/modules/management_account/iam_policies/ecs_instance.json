@@ -1,0 +1,28 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "sts:AssumeRole"
+      ],
+      "Resource": [
+        "arn:aws:iam::556748783639:role/cd",
+        "arn:aws:iam::376076567968:role/cd",
+        "arn:aws:iam::168416847939:role/cd",
+        "arn:aws:iam::460402331925:role/cd",
+        "arn:aws:iam::002540887416:role/cd"
+      ]
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "s3:PutObject",
+        "s3:PutObjectAcl"
+      ],
+      "Resource": [
+        "arn:aws:s3:::prod-core-shared-assets/*"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "command": [],
+  "image": "${image}",
+  "memory": ${memory},
+  "vcpus": ${vcpus},
+  "jobRoleArn": "${jobRoleArn}",
+  "environment": [
+    {"name": "TEST_ENV", "value": "TERRAFORM_ENV"}
+  ]
+}

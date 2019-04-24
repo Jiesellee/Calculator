@@ -1,0 +1,87 @@
+jobs:
+- name: s3_semver
+  serial: true
+  public: true
+  plan:
+  - get: "container_image"
+  - task: "sts_assume_role"
+    image: "container_image"
+    config:
+      platform: linux
+      outputs:
+        - name: semver_sts
+      params:
+        SEMVER_STS_PATH: "/dev/shm/semver_sts.json"
+      run:
+        path: sh
+        args:
+          - "-ec"
+          - |
+            # payment dev
+            # aws sts assume-role --role-arn arn:aws:iam::422623829475:role/cd --role-session-name semver_session > "$SEMVER_STS_PATH"
+            cp -v "$SEMVER_STS_PATH" semver_sts/
+  - task: "sts_assume_role_env_vars"
+    image: "container_image"
+    config:
+      platform: linux
+      inputs:
+        - name: semver_sts
+      outputs:
+        - name: semver_sts_env
+      params:
+        SEMVER_STS_PATH: "semver_sts/semver_sts.json"
+        SEMVER_ENVVARS_PATH: "/dev/shm/semver_sts_env.sh"
+      run:
+        path: sh
+        args:
+          - "-ec"
+          - |
+            touch "$SEMVER_ENVVARS_PATH"
+            AWS_SECRET_ACCESS_KEY=$(jq -r ".Credentials.SecretAccessKey" $SEMVER_STS_PATH)
+            echo "export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY" >> "$SEMVER_ENVVARS_PATH"
+            AWS_ACCESS_KEY_ID=$(jq -r ".Credentials.AccessKeyId" $SEMVER_STS_PATH)
+            echo "export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID" >> "$SEMVER_ENVVARS_PATH"
+            AWS_SESSION_TOKEN=$(jq -r ".Credentials.SessionToken" $SEMVER_STS_PATH)
+            echo "export AWS_SESSION_TOKEN=$AWS_SESSION_TOKEN" >> "$SEMVER_ENVVARS_PATH"
+            cp -v "$SEMVER_ENVVARS_PATH" semver_sts_env/
+  - task: "delete_bucket"
+    image: "container_image"
+    config:
+      platform: linux
+      inputs:
+        - name: semver_sts_env
+      params:
+        SEMVER_ENVVARS_PATH: "semver_sts_env/semver_sts_env.sh"
+        MAIN_S3_BUCKET: "prod-transit-helm-charts-copy01"
+        NEW_S3_BUCKET: "prod-transit-helm-charts-copy01"
+      run:
+        path: sh
+        args:
+          - "-ec"
+          - |
+            source "$SEMVER_ENVVARS_PATH"
+            apk --update add py2-pip
+            pip install boto3
+            tee s3_do.py <<EOF
+            #!/usr/bin/env python
+            import boto3
+            from boto3.session import Session
+            #for bucket in boto3.resource('s3').buckets.all():
+            #  print(bucket.name)
+            sess = boto3.Session()
+            s3 = sess.resource(service_name='s3')
+            bucket = s3.Bucket('$MAIN_S3_BUCKET')
+            bucket.object_versions.delete()
+            EOF
+            ls -lha
+            chmod 755 s3_do.py
+            ls -lha
+            cat s3_do.py
+            ./s3_do.py
+            aws s3 ls s3://$MAIN_S3_BUCKET
+resources:
+- name: "container_image"
+  type: docker-image
+  source:
+    repository: "stefancocora/kops-tools"
+    tag: "latest"

@@ -1,0 +1,83 @@
+terraform {
+  backend "s3" {
+    bucket  = "dev-core-tf-state"
+    key     = "rfid_management/terraform.tfstate"
+    region  = "eu-west-1"
+    profile = "ri-dev"
+  }
+}
+
+variable "environment" {
+  type        = "string"
+  description = "the environment of the account"
+  default     = "management"
+}
+
+variable "project_name" {
+  type        = "string"
+  description = "describe your variable"
+  default     = "rfid"
+}
+
+provider "aws" {
+  region  = "eu-west-1"
+  profile = "ri-root"
+
+  // only allow terraform to run in this account it
+  allowed_account_ids = ["728741135697"]
+
+  assume_role {
+    role_arn = "arn:aws:iam::728741135697:role/OrganizationAccountAccessRole"
+  }
+}
+
+module "iam_member_account" {
+  source = "git::ssh://git@github.com/river-island/core-infrastructure-terraform.git//modules/iam_member_account?ref=6edb4acaf3ef0358bef21d71d29e502536df5d7f"
+
+  aws_iam_root_account_id = "667800118351"
+  developers_full_access  = "true"
+
+  aws_product_management_account_id = "728741135697"
+}
+
+# circle_ci temp user
+resource "aws_iam_user" "rfid_circleci_user" {
+  name = "circleci"
+  path = "/"
+}
+
+resource "aws_iam_user_policy" "rfid_circleci_policy" {
+  user = "${aws_iam_user.rfid_circleci_user.name}"
+
+  // this allows circle_ci temp user to assume roles in rfid
+  // mgmt, dev, staging, prod
+  // as well as in transit dev and transit prod
+  // nb: the last 2 roles have been created manually
+  policy = <<EOF
+{
+    "Version": "2012-10-17",
+    "Statement": {
+        "Effect": "Allow",
+        "Action": "sts:AssumeRole",
+        "Resource": [
+          "arn:aws:iam::728741135697:role/cd",
+          "arn:aws:iam::217777530268:role/cd",
+          "arn:aws:iam::575393571653:role/cd",
+          "arn:aws:iam::215821541440:role/cd",
+          "arn:aws:iam::556748783639:role/rfid_build_role",
+          "arn:aws:iam::376076567968:role/rfid_build_role"
+        ]
+    }
+}
+EOF
+}
+
+module "s3_state_management" {
+  source       = "../../../modules/s3_state_bucket"
+  environment  = "${var.environment}"
+  project_name = "${var.project_name}"
+}
+
+module "cloudtrail_member_account" {
+  source = "../../../modules/cloudtrail_member_account"
+}
