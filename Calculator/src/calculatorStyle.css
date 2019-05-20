@@ -1,0 +1,59 @@
+body {
+  background-color: tomato;
+}
+
+h1 {
+  color: white;
+  font-size: 3.5em;
+}
+
+.display {
+  width: 516px;
+  height: 40px;
+  padding: 40px 40px 60px 40px;
+  border-bottom: 10px solid gold;
+  border-radius: 25;
+  box-sizing: border-box;
+  text-align: right;
+  font-family: "Times New Roman", Times, serif;
+  font-size: 50px;
+  color: gold;
+}
+
+.container {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  -moz-transform: translateX(-50%) translateY(-50%);
+  -webkit-transform: translateX(-50%) translateY(-50%);
+  transform: translateX(-50%) translateY(-50%);
+}
+
+.button button,
+.calculations button,
+.equals button {
+  background-color: transparent;
+  color: gold;
+  text-align: center;
+  text-decoration: none;
+  border: 1px solid gold;
+  height: 100px;
+  width: 100px;
+  font-size: -webkit-xxx-large;
+}
+
+/* .calculations button{
+display:block;
+position: relative; 
+top:39px;
+left: 774px; 
+} */
+
+.equals button {
+  height: 200px;
+  width: 204px;
+  display: block;
+  position: relative;
+  top: 300px;
+  left: 764px;
+}

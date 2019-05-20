@@ -18,4 +18,4 @@ function operate(operation, num1, num2) {
   return operation(num1, num2);
 }
 
-module.exports  = {add,multiply,subtract,divide};
+module.exports = { add, multiply, subtract, divide };
